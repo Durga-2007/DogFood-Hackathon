@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ project.title }} · DOGFOOD 2026{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="/projects">← Gallery</a>
+</div>
+
+<div class="project-detail">
+  <div class="project-detail-header">
+    <h1>{{ project.title }}</h1>
+    <span class="status-badge status-{{ project.status }}">{{ project.status }}</span>
+  </div>
+
+  <div class="project-detail-meta">
+    <div class="meta-item">
+      <strong>Track:</strong> {{ track_name or 'Not specified' }}
+    </div>
+    <div class="meta-item">
+      <strong>Team:</strong> {{ team_name or 'Unknown' }}
+    </div>
+    {% if project.submitted_at %}
+    <div class="meta-item">
+      <strong>Submitted:</strong> {{ project.submitted_at.strftime('%Y-%m-%d %H:%M UTC') }}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="project-summary-section">
+    <h2>About this project</h2>
+    <p>{{ project.summary }}</p>
+  </div>
+
+  {% if project.repo_url %}
+  <div class="project-repo">
+    <h2>Repository</h2>
+    <a href="{{ project.repo_url }}" target="_blank" class="btn btn-primary">View Repository ↗</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

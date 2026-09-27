@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Events · DOGFOOD 2026{% endblock %}
+{% block content %}
+<h1>Events</h1>
+<div id="events-list">Loading...</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const token = localStorage.getItem('dogfood_token');
+const role = localStorage.getItem('dogfood_role');
+
+async function loadEvents() {
+  const resp = await fetch('/api/events');
+  const events = await resp.json();
+  const container = document.getElementById('events-list');
+  if (!events.length) {
+    container.innerHTML = '<p>No events found.</p>';
+    return;
+  }
+  container.innerHTML = events.map(ev => `
+    <div class="card">
+      <div class="card-header">
+        <h3><a href="/events/${ev.id}">${ev.name}</a></h3>
+        <span class="status-badge ${ev.is_open ? 'status-open' : 'status-closed'}">
+          ${ev.is_open ? 'Open' : 'Closed'}
+        </span>
+      </div>
+      <p>${ev.description || ''}</p>
+      <p><strong>Submissions close:</strong> ${new Date(ev.submissions_close).toLocaleString()}</p>
+      <p><strong>Tracks:</strong> ${ev.tracks.map(t => t.name).join(', ') || 'None'}</p>
+      ${token ? `<button class="btn btn-outline" onclick="register('${ev.id}')">Register</button>` : ''}
+      <a href="/events/${ev.id}" class="btn btn-primary">Details</a>
+    </div>
+  `).join('');
+}
+
+async function register(eventId) {
+  if (!token) { window.location.href = '/login'; return; }
+  const resp = await fetch('/api/events/' + eventId + '/register', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await resp.json();
+  alert(data.message || (resp.ok ? 'Registered!' : 'Error'));
+}
+
+loadEvents();
+</script>
+{% endblock %}

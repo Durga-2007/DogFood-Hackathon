@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Login · DOGFOOD 2026{% endblock %}
+{% block content %}
+<div class="auth-form">
+  <h1>Sign In</h1>
+  <form id="login-form">
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required placeholder="you@example.org">
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required placeholder="••••••••">
+    </div>
+    <div id="error-msg" class="error-msg hidden"></div>
+    <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+  </form>
+  <div class="auth-hint">
+    <strong>Demo accounts:</strong><br>
+    organizer@dogfood.local / organizer123<br>
+    participant@dogfood.local / participant123<br>
+    judge_a@dogfood.local / judge_a123
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('error-msg');
+  errEl.classList.add('hidden');
+
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    if (!resp.ok) {
+      const data = await resp.json();
+      errEl.textContent = data.detail || 'Login failed';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const data = await resp.json();
+    localStorage.setItem('dogfood_token', data.token);
+    localStorage.setItem('dogfood_role', data.role);
+    window.location.href = '/dashboard';
+  } catch(err) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.classList.remove('hidden');
+  }
+});
+</script>
+{% endblock %}

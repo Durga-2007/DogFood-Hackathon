@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Submit Project · DOGFOOD 2026{% endblock %}
+{% block content %}
+<h1>Submit a Project</h1>
+<div id="submit-content">Loading...</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const token = localStorage.getItem('dogfood_token');
+if (!token) { window.location.href = '/login'; }
+
+async function load() {
+  const meResp = await fetch('/api/auth/me', { headers: {'Authorization': 'Bearer ' + token} });
+  if (!meResp.ok) { window.location.href = '/login'; return; }
+  const user = await meResp.json();
+
+  if (user.role !== 'participant') {
+    document.getElementById('submit-content').innerHTML = '<p class="error-msg">Only participants can submit projects.</p>';
+    return;
+  }
+
+  const evResp = await fetch('/api/events');
+  const events = await evResp.json();
+  const openEvents = events.filter(e => e.is_open);
+
+  if (!openEvents.length) {
+    document.getElementById('submit-content').innerHTML = `
+      <div class="info-box">
+        <p>⚠️ There are no open events accepting submissions at this time.</p>
+        <p>The submission deadline has passed for all current events.</p>
+      </div>`;
+    return;
+  }
+
+  let trackOptions = '';
+  const allTracks = {};
+  events.forEach(ev => {
+    ev.tracks.forEach(t => { allTracks[t.id] = { name: t.name, eventId: ev.id }; });
+  });
+
+  const html = `
+    <form id="submit-form">
+      <div class="form-group">
+        <label>Project Title *</label>
+        <input type="text" id="proj-title" required placeholder="My Awesome Project">
+      </div>
+      <div class="form-group">
+        <label>Summary</label>
+        <textarea id="proj-summary" rows="3" placeholder="One line of what it does."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Repository URL</label>
+        <input type="url" id="proj-repo" placeholder="https://github.com/...">
+      </div>
+      <div class="form-group">
+        <label>Event *</label>
+        <select id="proj-event" onchange="updateTracks()">
+          <option value="">Select an event</option>
+          ${openEvents.map(e => `<option value="${e.id}" data-tracks='${JSON.stringify(e.tracks)}'>${e.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Track</label>
+        <select id="proj-track">
+          <option value="">Select event first</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
+        <button type="submit" class="btn btn-primary">Submit Project</button>
+      </div>
+      <div id="form-msg" class="hidden"></div>
+    </form>`;
+  document.getElementById('submit-content').innerHTML = html;
+
+  document.getElementById('submit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitProject(true);
+  });
+}
+
+function updateTracks() {
+  const sel = document.getElementById('proj-event');
+  const opt = sel.options[sel.selectedIndex];
+  const tracks = JSON.parse(opt.dataset.tracks || '[]');
+  const trackSel = document.getElementById('proj-track');
+  trackSel.innerHTML = '<option value="">No track</option>' +
+    tracks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+async function saveDraft() {
+  const title = document.getElementById('proj-title').value;
+  if (!title) { showMsg('Title is required', 'error'); return; }
+  const body = buildBody();
+  const resp = await fetch('/api/projects', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await resp.json();
+  if (resp.ok) {
+    showMsg('Draft saved! Project ID: ' + data.id, 'success');
+  } else {
+    showMsg(data.detail || 'Error saving draft', 'error');
+  }
+}
+
+async function submitProject(final) {
+  const title = document.getElementById('proj-title').value;
+  const eventId = document.getElementById('proj-event').value;
+  if (!title || !eventId) { showMsg('Title and event are required', 'error'); return; }
+  const body = buildBody();
+  const resp = await fetch('/api/projects/submit-new', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await resp.json();
+  if (resp.ok) {
+    showMsg('Project submitted! <a href="/projects/' + data.id + '">View it here</a>', 'success');
+  } else {
+    showMsg((data.detail || 'Submission failed. The event may be closed.'), 'error');
+  }
+}
+
+function buildBody() {
+  return {
+    title: document.getElementById('proj-title').value,
+    summary: document.getElementById('proj-summary').value,
+    repo_url: document.getElementById('proj-repo').value,
+    event_id: document.getElementById('proj-event').value,
+    track_id: document.getElementById('proj-track').value || null,
+  };
+}
+
+function showMsg(msg, type) {
+  const el = document.getElementById('form-msg');
+  el.innerHTML = msg;
+  el.className = type === 'error' ? 'error-msg' : 'success-msg';
+  el.classList.remove('hidden');
+}
+
+load();
+</script>
+{% endblock %}

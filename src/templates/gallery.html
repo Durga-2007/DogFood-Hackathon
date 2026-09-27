@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Project Gallery · DOGFOOD 2026{% endblock %}
+{% block content %}
+<h1>Project Gallery</h1>
+<p class="subtitle">All submitted projects from Sample Hack 2026</p>
+
+<div class="filter-bar">
+  <input type="text" id="search" placeholder="Search projects..." oninput="filterProjects()">
+</div>
+
+<div class="project-grid" id="project-grid">
+  {% for project in projects %}
+  <div class="project-card" data-title="{{ project.title | lower }}" data-track="{{ tracks.get(project.track_id, '') | lower }}">
+    <div class="project-card-header">
+      <h3><a href="/projects/{{ project.id }}">{{ project.title }}</a></h3>
+      <span class="track-badge">{{ tracks.get(project.track_id, 'No track') }}</span>
+    </div>
+    <p class="project-summary">{{ project.summary }}</p>
+    <div class="project-meta">
+      <span class="team-name">👥 {{ teams.get(project.team_id, 'Unknown team') }}</span>
+      {% if project.submitted_at %}
+      <span class="submitted-at">📅 {{ project.submitted_at.strftime('%Y-%m-%d') }}</span>
+      {% endif %}
+    </div>
+    <div class="project-actions">
+      {% if project.repo_url %}
+      <a href="{{ project.repo_url }}" target="_blank" class="btn btn-sm btn-outline">Repo ↗</a>
+      {% endif %}
+      <a href="/projects/{{ project.id }}" class="btn btn-sm btn-primary">Details</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No submitted projects yet.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="project-count">Showing <strong id="visible-count">{{ projects | length }}</strong> of {{ projects | length }} projects</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterProjects() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const cards = document.querySelectorAll('.project-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const title = card.dataset.title || '';
+    const track = card.dataset.track || '';
+    const show = title.includes(q) || track.includes(q);
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('visible-count').textContent = visible;
+}
+</script>
+{% endblock %}

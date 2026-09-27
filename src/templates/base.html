@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DOGFOOD 2026{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="brand" href="/">🐾 DOGFOOD 2026</a>
+    <div class="nav-links" id="nav-links">
+      <a href="/projects">Gallery</a>
+      <a href="/events">Events</a>
+      <span id="nav-auth">
+        <a href="/login" id="nav-login">Login</a>
+      </span>
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>DOGFOOD 2026 · Powered by FastAPI + SQLite</p>
+  </footer>
+
+  <script>
+    // Show user info if logged in
+    const token = localStorage.getItem('dogfood_token');
+    if (token) {
+      fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => r.ok ? r.json() : null).then(user => {
+        if (user) {
+          document.getElementById('nav-auth').innerHTML =
+            `<span class="role-badge role-${user.role}">${user.role}</span>
+             <a href="/dashboard">${user.name}</a>
+             <a href="#" onclick="logout()">Logout</a>`;
+        }
+      }).catch(() => {});
+    }
+
+    function logout() {
+      const token = localStorage.getItem('dogfood_token');
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: token ? {'Authorization': 'Bearer ' + token} : {}
+      }).finally(() => {
+        localStorage.removeItem('dogfood_token');
+        window.location.href = '/';
+      });
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Teams · DOGFOOD 2026{% endblock %}
+{% block content %}
+<h1>Teams</h1>
+<div id="teams-content">Loading...</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const token = localStorage.getItem('dogfood_token');
+const role = localStorage.getItem('dogfood_role');
+
+async function loadTeams() {
+  const resp = await fetch('/api/teams');
+  const teams = await resp.json();
+  const container = document.getElementById('teams-content');
+
+  let html = '';
+  if (role === 'participant' && token) {
+    html += `<div class="dashboard-section">
+      <h2>My Team</h2>
+      <div id="my-team-info">Checking...</div>
+    </div>`;
+  }
+
+  html += `<h2>All Teams</h2><div class="team-grid">`;
+  if (!teams.length) {
+    html += '<p>No teams yet.</p>';
+  } else {
+    html += teams.map(tm => `
+      <div class="card">
+        <h3>${tm.name}</h3>
+        <p>Members: ${tm.members.length}</p>
+        ${role === 'participant' && token ? `<button class="btn btn-outline btn-sm" onclick="joinTeam('${tm.id}')">Join</button>` : ''}
+      </div>
+    `).join('');
+  }
+  html += '</div>';
+  container.innerHTML = html;
+
+  if (role === 'participant' && token) {
+    const myResp = await fetch('/api/teams/my', { headers: {'Authorization': 'Bearer ' + token} });
+    const myTeam = myResp.ok ? await myResp.json() : null;
+    const el = document.getElementById('my-team-info');
+    if (myTeam) {
+      el.innerHTML = `<p>You are on: <strong>${myTeam.name}</strong></p>
+        <p>Members: ${myTeam.members.map(m => m.email).join(', ')}</p>`;
+    } else {
+      el.innerHTML = `<p>You are not on a team.</p>
+        <input id="new-team-name" type="text" placeholder="Team name">
+        <button class="btn btn-primary" onclick="createTeam()">Create Team</button>`;
+    }
+  }
+}
+
+async function joinTeam(teamId) {
+  if (!token) { window.location.href = '/login'; return; }
+  const resp = await fetch('/api/teams/' + teamId + '/join', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await resp.json();
+  alert(resp.ok ? 'Joined team!' : (data.detail || 'Error'));
+  if (resp.ok) location.reload();
+}
+
+async function createTeam() {
+  const name = document.getElementById('new-team-name').value;
+  if (!name) { alert('Enter a team name'); return; }
+  const resp = await fetch('/api/teams', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  const data = await resp.json();
+  if (resp.ok) { alert('Team created!'); location.reload(); }
+  else alert(data.detail || 'Error');
+}
+
+loadTeams();
+</script>
+{% endblock %}

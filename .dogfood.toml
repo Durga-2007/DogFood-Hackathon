@@ -1,0 +1,21 @@
+[portal]
+base_url = "http://127.0.0.1:8080"
+
+[tiers]
+claimed = ["T1"]
+pitch = "A self-hosted hackathon submission and judging portal built with FastAPI, SQLite, and Docker."
+
+[auth]
+# Bearer tokens printed by the seed script on startup.
+# Format: Authorization: Bearer <token>
+organizer  = "Authorization: Bearer org_token_7f2a9b1c3d4e5f6a7b8c9d0e1f2a3b4c"
+judge_a    = "Authorization: Bearer jdg_a_token_91bc2d3e4f5a6b7c8d9e0f1a2b3c4d5e"
+judge_b    = "Authorization: Bearer jdg_b_token_44de5f6a7b8c9d0e1f2a3b4c5d6e7f8a"
+participant = "Authorization: Bearer prt_token_2e889c0d1e2f3a4b5c6d7e8f9a0b1c2d"
+
+[routes]
+gallery     = "/projects"
+submit      = "/api/projects/submit-new"
+judge_scores = "/api/judge/scores"
+peer_scores  = "/api/judge/scores?judge=judge_a"
+csv_export   = "/api/export.csv"

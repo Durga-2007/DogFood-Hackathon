@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} · DOGFOOD 2026{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/events">← Events</a></div>
+<h1>{{ event.name }}</h1>
+<div class="event-meta">
+  <p><strong>Submissions close:</strong> {{ event.submissions_close.strftime('%Y-%m-%d %H:%M UTC') }}</p>
+  <p><strong>Status:</strong>
+    {% if event.submissions_close > now %}
+      <span class="status-badge status-open">Open</span>
+    {% else %}
+      <span class="status-badge status-closed">Closed</span>
+    {% endif %}
+  </p>
+</div>
+<h2>Tracks</h2>
+<ul>
+  {% for track in event.tracks %}
+  <li>{{ track.name }}</li>
+  {% else %}
+  <li>No tracks defined.</li>
+  {% endfor %}
+</ul>
+<div class="event-actions">
+  <button class="btn btn-primary" onclick="register()">Register for this Event</button>
+  <a href="/submit" class="btn btn-secondary">Submit a Project</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Make 'now' available for Jinja2 - handled server-side above
+async function register() {
+  const token = localStorage.getItem('dogfood_token');
+  if (!token) { window.location.href = '/login'; return; }
+  const resp = await fetch('/api/events/{{ event.id }}/register', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await resp.json();
+  alert(data.message || 'Done');
+}
+</script>
+{% endblock %}

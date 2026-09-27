@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · DOGFOOD 2026{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div id="dashboard-content">Loading...</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const token = localStorage.getItem('dogfood_token');
+if (!token) { window.location.href = '/login'; }
+
+async function authFetch(url) {
+  return fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+}
+
+async function loadDashboard() {
+  const meResp = await authFetch('/api/auth/me');
+  if (!meResp.ok) { window.location.href = '/login'; return; }
+  const user = await meResp.json();
+
+  let html = `<div class="user-info">
+    <p><strong>Logged in as:</strong> ${user.name} (${user.email})</p>
+    <p><strong>Role:</strong> <span class="role-badge role-${user.role}">${user.role}</span></p>
+  </div>`;
+
+  // Events
+  const evResp = await authFetch('/api/events');
+  const events = evResp.ok ? await evResp.json() : [];
+
+  if (user.role === 'organizer') {
+    html += `<div class="dashboard-section">
+      <h2>Event Management</h2>
+      <a href="/events" class="btn btn-primary">Manage Events</a>
+      <button class="btn btn-secondary" onclick="showCreateEvent()">+ Create Event</button>
+      <div id="create-event-form" class="hidden">
+        <h3>Create New Event</h3>
+        <div class="form-group"><label>Name</label><input id="ev-name" type="text" placeholder="Hackathon name"></div>
+        <div class="form-group"><label>Description</label><textarea id="ev-desc"></textarea></div>
+        <div class="form-group"><label>Submissions Close (UTC)</label><input id="ev-close" type="datetime-local"></div>
+        <button class="btn btn-primary" onclick="createEvent()">Create</button>
+      </div>
+    </div>`;
+  }
+
+  if (user.role === 'participant') {
+    // Team info
+    const tmResp = await authFetch('/api/teams/my');
+    const myTeam = tmResp.ok ? await tmResp.json() : null;
+
+    html += `<div class="dashboard-section">
+      <h2>My Team</h2>`;
+    if (myTeam) {
+      html += `<p>You are on team: <strong>${myTeam.name}</strong></p>
+        <p>Members: ${myTeam.members.map(m => m.email).join(', ')}</p>
+        <a href="/teams" class="btn btn-outline">Team Details</a>`;
+    } else {
+      html += `<p>You are not on a team yet.</p>
+        <div class="form-group"><label>Create Team Name</label><input id="team-name" type="text" placeholder="My Awesome Team"></div>
+        <div class="form-group"><label>Event</label>
+          <select id="team-event">
+            ${events.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="createTeam()">Create Team</button>`;
+    }
+    html += `</div>`;
+
+    // Projects
+    html += `<div class="dashboard-section">
+      <h2>My Projects</h2>
+      <a href="/submit" class="btn btn-primary">+ Submit Project</a>
+      <a href="/projects" class="btn btn-outline">View Gallery</a>
+    </div>`;
+  }
+
+  if (user.role === 'judge') {
+    html += `<div class="dashboard-section">
+      <h2>Judging</h2>
+      <p>Judging functionality is available in T2. Projects to review will appear here.</p>
+      <a href="/projects" class="btn btn-outline">Browse Projects</a>
+    </div>`;
+  }
+
+  document.getElementById('dashboard-content').innerHTML = html;
+}
+
+function showCreateEvent() {
+  document.getElementById('create-event-form').classList.toggle('hidden');
+}
+
+async function createEvent() {
+  const name = document.getElementById('ev-name').value;
+  const desc = document.getElementById('ev-desc').value;
+  const close = document.getElementById('ev-close').value;
+  if (!name || !close) { alert('Name and close date are required'); return; }
+  const resp = await fetch('/api/events', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description: desc, submissions_close: close + ':00Z', tracks: [] })
+  });
+  if (resp.ok) {
+    alert('Event created!');
+    location.reload();
+  } else {
+    const err = await resp.json();
+    alert('Error: ' + (err.detail || 'Unknown error'));
+  }
+}
+
+async function createTeam() {
+  const name = document.getElementById('team-name').value;
+  const event_id = document.getElementById('team-event').value;
+  if (!name) { alert('Team name is required'); return; }
+  const resp = await fetch('/api/teams', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, event_id })
+  });
+  if (resp.ok) {
+    alert('Team created!');
+    location.reload();
+  } else {
+    const err = await resp.json();
+    alert('Error: ' + (err.detail || 'Unknown error'));
+  }
+}
+
+loadDashboard();
+</script>
+{% endblock %}

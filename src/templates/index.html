@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Home · DOGFOOD 2026{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>DOGFOOD 2026</h1>
+  <p class="lead">Hackathon Submission &amp; Judging Portal</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="/projects">Browse Projects</a>
+    <a class="btn btn-secondary" href="/events">View Events</a>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <h3>📋 Events</h3>
+    <p>View available hackathon events and tracks. Register as a participant to compete.</p>
+    <a href="/events" class="btn btn-outline">View Events</a>
+  </div>
+  <div class="card">
+    <h3>👥 Teams</h3>
+    <p>Create or join a team, then collaborate on your project submission.</p>
+    <a href="/teams" class="btn btn-outline">Manage Teams</a>
+  </div>
+  <div class="card">
+    <h3>🚀 Projects</h3>
+    <p>Submit your project, save drafts, and publish to the public gallery.</p>
+    <a href="/projects" class="btn btn-outline">View Gallery</a>
+  </div>
+</div>
+{% endblock %}
